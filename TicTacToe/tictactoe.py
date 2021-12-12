@@ -126,7 +126,6 @@ def nextMove(board, player):
         if s > maxscore:
             maxscore = s
             maxmove = i
-    print(maxmove, maxscore)
     return maxmove
 
 def main():
