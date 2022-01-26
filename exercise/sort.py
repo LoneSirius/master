@@ -5,13 +5,15 @@
 #
 #   Remark :
 #   2022.01.21  create first version quick sort, selection sort and bubble sort.
-#
-#
+#   2022.01.23  add merge sort
+#   2022.01.25  add quick sort multithread version
 import logging
 import random
 import datetime
 import math
+import threading
 re_count = 0
+data = []
 
 #   merge sort
 
@@ -185,6 +187,60 @@ def quick_nonre(data):
             stack.append([i + 1, e])
     return data
 
+#   Quick Sort - multithread version
+
+
+class Quickthread(threading.Thread):
+    def __init__(self, val, s, e):
+        self.val = val
+        self.stack = []
+        self.stack.append([s, e])
+        threading.Thread.__init__(self)
+
+    def run(self):
+        global data
+        while len(self.stack) > 0:
+            s, e = self.stack.pop()
+            if e > s:
+                i = s
+                j = s + 1
+                while (j <= e):
+                    if data[j] < data[s]:
+                        i += 1
+                        data[i], data[j] = data[j], data[i]
+                    j += 1
+                if i != s:
+                    data[i], data[s] = data[s], data[i]
+                    self.stack.append([s, i - 1])
+                self.stack.append([i + 1, e])
+
+
+def quick_mt(srcdata):
+    global data
+    data = srcdata
+
+    ts = []
+    s, e = 0, len(data) - 1
+    i = s
+    j = s + 1
+    while (j <= e):
+        if data[j] < data[s]:
+            i += 1
+            data[i], data[j] = data[j], data[i]
+        j += 1
+    if i != s:
+        data[i], data[s] = data[s], data[i]
+        t1 = Quickthread(i, s, i - 1)
+        ts.append(t1)
+        t1.start()
+        t2 = Quickthread(i, i + 1, e)
+        ts.append(t2)
+        t2.start()
+
+        for i in ts:
+            i.join()
+    return data
+
 #   selection sort
 
 
@@ -235,6 +291,7 @@ def test():
     alglist = [[quick_re0, 'Recursive quick sort v0'],
                [quick_re, 'Recursive quick sort'],
                [quick_nonre, 'Non-recursive quick sort'],
+               [quick_mt, 'Non-recursive quick sort - Multithread'],
                [merge_re, 'Recursive Merge sort'],
                [merge_re1, 'Recursive Merge sort version 1'],
                [merge_nonre, 'Non-recursive merge sort (bottom up)']]
@@ -258,3 +315,4 @@ if __name__ == "__main__":
     #logging.basicConfig(filename='debug.log', level=logging.DEBUG)
     test()
     #print(merge_nonre([9, 8, 7, 6, 5, 4, 3, 2, 1, 0]))
+    #print(quick_mt([9, 8, 7, 6, 5, 4, 3, 2, 1, 0]))
