@@ -199,14 +199,18 @@ class Stock:
         index = len(self.__transactions) - 1
         if index == 0:
             return None
-        start = timestamp - 5 / 1440
+        start = timestamp - 5.0 / 1440.0
         volume, qty = 0, 0
+        print(f"{start}/{timestamp}")
         while (index >= 0) and (self.__transactions[index][0] >= start):
             if self.__transactions[index][0] <= timestamp:
                 volume += self.__transactions[index][1] * \
                     self.__transactions[index][2]
                 qty += self.__transactions[index][2]
+                print(f"{volume}/{qty}")
             index -= 1
+
+        print(f'volume/qty : {volume}/{qty}')
         if qty == 0:
             return None
         else:
@@ -241,19 +245,26 @@ def testPEYield():
 def testTx():
     def genTx(count):
         result = list()
+        f = open('test.txt', 'w')
         for i in range(0, count):
             j = randrange(-100, 100)
-            result.append([time(), 1000 + j, 100 + j / 100])
+            result.append([time(), 100 + j / 100, 1000 + j])
+            f.write(f'{1000 + j}, {100 + j / 100}\n')
+        f.close()
         return result
 
     exchange = Exchange()
     data = genTx(100)
     print(data)
-    for symbol in exchange.getAllSymbols():
-        for row in data:
-            exchange.addBuy(row[0], symbol, row[1], row[2])
-        print(f"VWPrice: {symbol} - {exchange.getVWPrice(symbol)}")
-    print(f"Index : {exchange.getAllShareIndex()}")
+    # for symbol in exchange.getAllSymbols():
+    #     for row in data:
+    #         exchange.addBuy(row[0], symbol, row[1], row[2])
+    #     print(f"VWPrice: {symbol} - {exchange.getVWPrice(symbol)}")
+    symbol = 'TEA'
+    for row in data:
+        exchange.addBuy(row[0], symbol, row[1], row[2])
+    print(f"VWPrice: {symbol} - {exchange.getVWPrice(symbol)}")
+    #print(f"Index : {exchange.getAllShareIndex()}")
 
 
 if __name__ == '__main__':
