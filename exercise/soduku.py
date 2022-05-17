@@ -1,6 +1,7 @@
 #   Soduku.py
 #
 #   By Angus Lin, 2022.04.16
+import sys
 import copy
 from dataclasses import dataclass
 import time
@@ -9,7 +10,7 @@ from tkinter import Y
 
 
 class soduku2:
-    def __init__(self, puzzle: list) -> list:
+    def __init__(self, puzzle: list) -> None:
         self._puzzle = copy.deepcopy(puzzle)
         self._avail = dict()
         self._trial = []
@@ -18,9 +19,10 @@ class soduku2:
         self.available()
 
     def isSolved(self) -> bool:
-        """returns True if puzzle is solved, False otherwise
+        """Return current solve status of the puzzle.
+
+        Returns: True if the puzzle is solved, False otherwise
         """
-        # sumcol = [0] * 9
         for row in self._puzzle:
             if sum(row) != 45:
                 return False
@@ -29,41 +31,34 @@ class soduku2:
                 return False
         return True
 
-    def solvedFail(self):
-        for key in self._avail:
-            if not self._avail[key]:
-                raise ValueError(
-                    f'Solution fails, ({key[0]},{key[1]}) has no available option.')
-
-    def solve(self):
+    def solve(self) -> None:
+        """Solve current puzzle"""
         while self.solve_fillsingle():
             pass
         self.solve_trial()
-        print(f"Puzzle solved state : {self.isSolved()}")
-        print(f"Puzzle failure : {self.solvedFail()}")
 
     def solve_trial(self) -> bool:
-        """Try to fill in the puzzle one by one.
+        """Try to solve the puzzle by trial and error recursively
+
+        Returns: True if the puzzle is solved, None otherwise
         """
         if self.isSolved():
             return True
-        else:
-            try:
-                [x, y, data] = self.avail_first()
-                self._trial.append([x, y, data, copy.deepcopy(
-                    self._puzzle), copy.deepcopy(self._avail)])
-                self.puzzle_fill(x, y, data)
-                while self.solve_fillsingle():
-                    if self.isSolved():
-                        return True
-                self.solve_trial()
-            except ValueError:
-                self.solve_revert()
-                self.solve_trial()
+        try:
+            [x, y, data] = self.avail_first()
+            self._trial.append([x, y, data, copy.deepcopy(
+                self._puzzle), copy.deepcopy(self._avail)])
+            self.puzzle_fill(x, y, data)
+            while self.solve_fillsingle():
+                if self.isSolved():
+                    return True
+            self.solve_trial()
+        except ValueError:
+            self.solve_revert()
+            self.solve_trial()
 
-    def solve_revert(self):
-        """revert last trial
-        """
+    def solve_revert(self)-> None:
+        """Revert last trial"""
         self._puzzle = copy.deepcopy(self._trial[-1][-2])
         self._avail = copy.deepcopy(self._trial[-1][-1])
         self._avail[(self._trial[-1][0], self._trial[-1]
@@ -73,8 +68,9 @@ class soduku2:
         if goback:
             self.solve_revert()
 
-    def solve_fillsingle(self):
-        """solve the puzzle by filling in only available option
+    def solve_fillsingle(self) -> bool:
+        """Solve the puzzle by filling in only available option
+
         Returns: True if at least one fill, False otherwise
         """
         result = False
@@ -119,9 +115,8 @@ class soduku2:
                     break
         return result
 
-    def available(self):
-        """generate available options for puzzle
-        """
+    def available(self)-> None:
+        """generate available options for puzzle"""
         for key in [(x, y) for x in range(9)
                     for y in range(9) if not self._puzzle[x][y]]:
             self._avail[key] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -130,27 +125,24 @@ class soduku2:
             if self._puzzle[i][j]:
                 self.puzzle_fill(i, j, self._puzzle[i][j])
 
-    def avail_row(self, row) -> list:
-        """return available options in row
-        """
+    def avail_row(self, row) -> list[int]:
+        """return available options in row"""
         result = []
         for i in range(9):
             if (row, i) in self._avail:
                 result.extend(self._avail[(row, i)])
         return result
 
-    def avail_col(self, col) -> list:
-        """return available options in column
-        """
+    def avail_col(self, col) -> list[int]:
+        """return available options in column"""
         result = []
         for i in range(9):
             if (i, col) in self._avail:
                 result.extend(self._avail[(i, col)])
         return result
 
-    def avail_q(self, q) -> list:
-        """return available options in quadrant q
-        """
+    def avail_q(self, q) -> list[int]:
+        """return available options in quadrant q"""
         result = []
         for i in range((q // 3) * 3, (q // 3) * 3 + 3):
             for j in range((q % 3) * 3, (q % 3) * 3 + 3):
@@ -158,7 +150,11 @@ class soduku2:
                     result.extend(self._avail[(i, j)])
         return result
 
-    def avail_remove(self, x: int, y: int, data: int):
+    def avail_remove(self, x: int, y: int, data: int)->None:
+        """Remove data from (x,y) and all related positsions
+
+
+        """
         if (x, y) in self._avail:
             if data in self._avail[(x, y)]:
                 self._avail[(x, y)].remove(data)
@@ -197,21 +193,13 @@ class soduku2:
             for i in range(9):
                 self.avail_remove(x, i, data)
                 self.avail_remove(i, y, data)
-                # if (x, i) in self._avail and (data in self._avail[(x, i)]):
-                #     self._avail[(x, i)].remove(data)
-                # if (i, y) in self._avail and (data in self._avail[(i, y)]):
-                #     self._avail[(i, y)].remove(data)
             qx = x // 3
             qy = y // 3
             for i in range(qx*3, qx*3+3):
                 for j in range(qy*3, qy*3+3):
                     self.avail_remove(i, j, data)
-                    # if (i, j) in self._avail:
-                    #     if data in self._avail[(i, j)]:
-                    #         self._avail[(i, j)].remove(data)
-        except:
-            raise ValueError(
-                f'Solution fails, ({x},{y}) has no available option.')
+        except Exception as e:
+            raise
 
     def __str__(self) -> str:
         """Return the puzzle in string
@@ -225,7 +213,6 @@ class soduku2:
                     result += ' '
                 result += f'{item}' if item else '_'
             result += '\n'
-            # result += f'{row[0]}{row[1]}{row[2]} {row[3]}{row[4]}{row[5]} {row[6]}{row[7]}{row[8]}\n'
         return result
 
 
@@ -248,33 +235,19 @@ class soduku:
                 return False
         return True
 
-    def solvedFail(self) -> bool:
-        """return True if the current puzzle cannot be solved, False otherwise
-        """
-        for i in range(9):
-            for j in range(9):
-                if (not self._puzzle[i][j]) and (not self._avail[i][j]):
-                    return True
-        return False
-
     def solve(self):
         """solve the soduku puzzle
         """
         while self.solve_fillsingle():
             pass
-        while not self.isSolved():
-            self.solve_trial()
+        self.solve_trial()
 
         print(f"Puzzle solved state : {self.isSolved()}")
-        print(f"Puzzle failure : {self.solvedFail()}")
 
     def available(self):
         """generate available options for puzzle
         """
         if not self._avail:
-            # for j in range(9):
-            #     self.avail.append([[1, 2, 3, 4, 5, 6, 7, 8, 9]
-            #                       for i in range(9)])
             self._avail = [copy.deepcopy(
                 [[1, 2, 3, 4, 5, 6, 7, 8, 9] for i in range(9)]) for j in range(9)]
 
@@ -307,6 +280,13 @@ class soduku:
             for j in range((q % 3) * 3, (q % 3) * 3 + 3):
                 result.extend(self._avail[i][j])
         return result
+
+    def avail_remove(self, x: int, y: int, data: int):
+        if data in self._avail[x][y]:
+            (self._avail[x][y]).remove(data)
+        if not self._avail[x][y] and not self._puzzle[x][y]:
+            raise ValueError(
+                f'Solution fails, ({x},{y}) has no available option.')
 
     def avail_first(self):
         """return first available option (x, y, data)
@@ -379,15 +359,10 @@ class soduku:
         """Try to fill in the puzzle one by one.
         """
         # try:
-        if self.solvedFail():
-            # #   solve fail, revert
-            # self._puzzle = copy.deepcopy(self._trial[-1][-2])
-            # self._avail = copy.deepcopy(self._trial[-1][-1])
-            # self._avail[self._trial[-1][0]][self._trial[-1]
-            #                                 [1]].remove(self._trial[-1][2])
-            # self._trial.pop()
-            pass
-        else:
+        if self.isSolved():
+            return True
+
+        try:
             [x, y, data] = self.avail_first()
             self._trial.append([x, y, data, copy.deepcopy(
                 self._puzzle), copy.deepcopy(self._avail)])
@@ -395,40 +370,41 @@ class soduku:
             while self.solve_fillsingle():
                 if self.isSolved():
                     return True
-                if self.solvedFail():
-                    #   solve fail, revert
-                    self._puzzle = copy.deepcopy(self._trial[-1][-2])
-                    self._avail = copy.deepcopy(self._trial[-1][-1])
-                    self._avail[self._trial[-1][0]][self._trial[-1]
-                                                    [1]].remove(self._trial[-1][2])
-                    self._trial.pop()
-                else:
-                    self.solve_trial()
-        # except:
-        #     self._puzzle = copy.deepcopy(self._trial[-1][-2])
-        #     self._avail = copy.deepcopy(self._trial[-1][-1])
-        #     self._avail[self._trial[-1][0]][self._trial[-1]
-        #                                     [1]].remove(self._trial[-1][2])
-        #     self._trial.pop()
+            self.solve_trial()
+        except ValueError:
+            self.solve_revert()
+            self.solve_trial()
+
+    def solve_revert(self):
+        """revert last trial
+        """
+        self._puzzle = copy.deepcopy(self._trial[-1][-2])
+        self._avail = copy.deepcopy(self._trial[-1][-1])
+        self._avail[self._trial[-1][0]][self._trial[-1]
+                                        [1]].remove(self._trial[-1][2])
+        goback = not self._avail[self._trial[-1][0]][self._trial[-1][1]]
+        self._trial.pop()
+        if goback:
+            self.solve_revert()
 
     def puzzle_fill(self, x: int, y: int, data: int):
         """fill x,y of the puzzle with data, update available accordingly
         """
         if not data:
             return
-        self._puzzle[x][y] = data
-        self._avail[x][y] = []
-        for i in range(9):
-            if data in self._avail[x][i]:
-                (self._avail[x][i]).remove(data)
-            if data in self._avail[i][y]:
-                (self._avail[i][y]).remove(data)
-        qx = x // 3
-        qy = y // 3
-        for i in range(qx*3, qx*3+3):
-            for j in range(qy*3, qy*3+3):
-                if data in self._avail[i][j]:
-                    (self._avail[i][j]).remove(data)
+        try:
+            self._puzzle[x][y] = data
+            self._avail[x][y] = []
+            for i in range(9):
+                self.avail_remove(x, i, data)
+                self.avail_remove(i, y, data)
+            qx = x // 3
+            qy = y // 3
+            for i in range(qx*3, qx*3+3):
+                for j in range(qy*3, qy*3+3):
+                    self.avail_remove(i, j, data)
+        except:
+            raise
 
     def __str__(self) -> str:
         """Return the puzzle in string
@@ -442,7 +418,6 @@ class soduku:
                     result += ' '
                 result += f'{item}' if item else '_'
             result += '\n'
-            # result += f'{row[0]}{row[1]}{row[2]} {row[3]}{row[4]}{row[5]} {row[6]}{row[7]}{row[8]}\n'
         return result
 
 
@@ -450,7 +425,7 @@ def main(fname=""):
     puzzle = []
     if fname:
         with open(fname, 'r') as f:
-            for line in f:
+            for i, line in enumerate(f):
                 puzzle.append([])
                 for n, j in enumerate(line):
                     if n > 8:
@@ -459,6 +434,8 @@ def main(fname=""):
                         puzzle[-1].append(0)
                     else:
                         puzzle[-1].append(int(j))
+                if i == 8:
+                    break
         f.close()
     else:
         puzzle = [[0, 2, 0, 5, 0, 1, 0, 9, 0],
@@ -480,9 +457,6 @@ def main(fname=""):
                   [2, 6, 5, 8, 1, 4, 9, 3, 7],
                   [3, 1, 8, 9, 5, 7, 4, 6, 2]]
     starttime = time.time()
-    # solver = soduku(puzzle)
-    # print(solver)
-    # solver.solve()
     solver = soduku2(puzzle)
     solver.solve()
     endtime = time.time()
@@ -500,5 +474,7 @@ def main(fname=""):
 
 
 if __name__ == "__main__":
-    os.chdir('//home//al//project//VSCode//exercise')
-    main('test1.txt')
+    fname = ''
+    if len(sys.argv) == 2:
+        fname = sys.argv[1]
+    main(fname)
